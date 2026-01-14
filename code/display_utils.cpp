@@ -149,7 +149,7 @@ void displayMenu(const char* title, const char* items[], int count, int selectio
     StickCP2.Lcd.setTextDatum(TL_DATUM);
 }
 
-void displayTimingScreen(float elapsedTime, int count, float lastSplit) {
+void displayTimingScreen(float elapsedTime, int count, float lastSplit, float lastShot) {
     static float prevElapsedTime = -1.0f;
     static int prevCount = -1;
     static float prevLastSplit = -1.0f;
@@ -172,20 +172,39 @@ void displayTimingScreen(float elapsedTime, int count, float lastSplit) {
     StickCP2.Lcd.setTextColor(WHITE, BLACK);
     StickCP2.Lcd.setTextDatum(TL_DATUM);
 
-    if (redrawMenu || abs(elapsedTime - prevElapsedTime) > 0.01f) {
+    int time_y = (rotation % 2 == 0) ? 20 : 15;
+
+    if (redrawMenu || abs(elapsedTime - prevElapsedTime) > 0.01f || count != prevCount) {
         StickCP2.Lcd.setTextFont(7);
         StickCP2.Lcd.setTextSize(1);
-        int time_y = (rotation % 2 == 0) ? 20 : 15;
-        StickCP2.Lcd.fillRect(5, time_y, StickCP2.Lcd.width() - 10 , StickCP2.Lcd.fontHeight(7) + 4, BLACK);
+        StickCP2.Lcd.fillRect(5, time_y, StickCP2.Lcd.width() - 80 , StickCP2.Lcd.fontHeight(7) + 4, BLACK);
         StickCP2.Lcd.setCursor(10, time_y);
+        if (count > 0) {
+            StickCP2.Lcd.printf("%.2f", lastShot);
+        } else {
+            StickCP2.Lcd.printf("%.2f", elapsedTime);
+            prevElapsedTime = elapsedTime;
+        }
+    }
+
+    int text_size = (rotation % 2 == 0) ? 1 : 2;
+    int shots_y = (rotation % 2 == 0) ? 100 : 75;
+    int split_y = shots_y + ((rotation % 2 == 0) ? 20 : 25);
+    int line_h = (text_size == 1) ? 14 : 20;
+
+    if (count > 0 && (redrawMenu || abs(elapsedTime - prevElapsedTime) > 0.01f)) {
+        StickCP2.Lcd.setTextFont(0);
+        StickCP2.Lcd.setTextSize(text_size);
+        if (rotation % 2 == 0) {
+            StickCP2.Lcd.fillRect(StickCP2.Lcd.width() - 50, 80, StickCP2.Lcd.width() - 10 , line_h, BLACK);
+            StickCP2.Lcd.setCursor(StickCP2.Lcd.width() - 50, 80);
+        } else {
+            StickCP2.Lcd.fillRect(StickCP2.Lcd.width() - 80, time_y, StickCP2.Lcd.width() - 10 , line_h, BLACK);
+            StickCP2.Lcd.setCursor(StickCP2.Lcd.width() - 80, time_y);
+        }
         StickCP2.Lcd.printf("%.2f", elapsedTime);
         prevElapsedTime = elapsedTime;
     }
-
-    int shots_y = (rotation % 2 == 0) ? 80 : 75;
-    int split_y = shots_y + ((rotation % 2 == 0) ? 20 : 25);
-    int text_size = (rotation % 2 == 0) ? 1 : 2;
-    int line_h = (text_size == 1) ? 14 : 20;
 
     if (redrawMenu || count != prevCount) {
         StickCP2.Lcd.setTextFont(0);
@@ -230,7 +249,8 @@ void displayStoppedScreen() {
     StickCP2.Lcd.setTextSize(text_size);
 
     StickCP2.Lcd.setCursor(10, y_pos);
-    StickCP2.Lcd.printf("Total Shots: %d", shotCount);
+    if (shotCount > 0) { StickCP2.Lcd.printf("Last: %.2fs (S%d)", lastShotTime, shotCount); }
+    else { StickCP2.Lcd.print("Last: ---s"); }
     y_pos += line_h;
 
     StickCP2.Lcd.setCursor(10, y_pos);
@@ -587,3 +607,4 @@ void displayBluetoothScanResults() {
     drawLowBatteryIndicator();
     StickCP2.Lcd.setTextDatum(TL_DATUM); 
 }
+        

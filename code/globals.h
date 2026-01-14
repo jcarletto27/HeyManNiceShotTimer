@@ -68,6 +68,7 @@ extern unsigned long scanStartTime;
 extern int shotCount;
 extern unsigned long shotTimestamps[MAX_SHOTS_LIMIT];
 extern float splitTimes[MAX_SHOTS_LIMIT];
+extern float lastShotTime;
 extern unsigned long lastShotTimestamp;
 extern unsigned long lastDetectionTime;
 

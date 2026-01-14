@@ -1,10 +1,10 @@
 // External Libraries
+#include <LittleFS.h>
 #include <M5StickCPlus2.h>
 #include "M5MicPeakRMS.h"      // Custom library for microphone
 #include "BluetoothA2DPSource.h"
 #include <ESP32BluetoothScanner.h>
 #include <Preferences.h>
-#include <LittleFS.h>
 #include <cmath>        // For abs, sin
 #include <float.h>      // For FLT_MAX
 #include <vector>       // For std::vector
@@ -48,7 +48,7 @@ bool playBootAnimation = true;
 bool enableAutoSleep = true;
 
 BluetoothA2DPSource a2dp_source;
-String currentBluetoothDeviceName = "LEXON MINO L";
+String currentBluetoothDeviceName = "";
 bool currentBluetoothAutoReconnect = false;
 int currentBluetoothVolume = 80;
 int currentBluetoothAudioOffsetMs = 0; 
@@ -78,6 +78,7 @@ unsigned long scanStartTime = 0;
 int shotCount = 0;
 unsigned long shotTimestamps[MAX_SHOTS_LIMIT];
 float splitTimes[MAX_SHOTS_LIMIT];
+float lastShotTime = 0;
 unsigned long lastShotTimestamp = 0;
 unsigned long lastDetectionTime = 0;
 

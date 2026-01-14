@@ -7,6 +7,7 @@
 
 void resetShotData() {
     shotCount = 0;
+    lastShotTime = 0;
     lastShotTimestamp = 0;
     lastDetectionTime = 0;
     currentCyclePeakRMS = 0.0f;
@@ -22,8 +23,17 @@ void resetShotData() {
 
 void handleLiveFireReady() {
     if (redrawMenu) {
-        displayTimingScreen(0.0, 0, 0.0);
+        displayTimingScreen(0.0, 0, 0.0, 0.0);
         redrawMenu = false;
+    }
+    if (StickCP2.BtnA.pressedFor(LONG_PRESS_DURATION_MS)) {
+        setState(MODE_SELECTION);
+        currentMenuSelection = (int)MODE_LIVE_FIRE;
+        int rotation = StickCP2.Lcd.getRotation();
+        int itemsPerScreen = (rotation % 2 == 0) ? MENU_ITEMS_PER_SCREEN_PORTRAIT : MENU_ITEMS_PER_SCREEN_LANDSCAPE;
+        menuScrollOffset = max(0, currentMenuSelection - itemsPerScreen + 1);
+        StickCP2.Lcd.fillScreen(BLACK);
+        return;
     }
     if (StickCP2.BtnA.wasClicked()) {
         resetActivityTimer();
@@ -35,7 +45,7 @@ void handleLiveFireReady() {
         StickCP2.Lcd.setTextFont(0);
         StickCP2.Lcd.setTextSize(3);
         StickCP2.Lcd.drawString("Ready...", StickCP2.Lcd.width()/2, StickCP2.Lcd.height()/2);
-        delay(1000); 
+        delay(LIVE_FIRE_DELAY_MS); 
     }
 }
 
@@ -84,7 +94,7 @@ void handleLiveFireTiming() {
              if (redrawMenu || currentTime - lastDisplayUpdateTime >= DISPLAY_UPDATE_INTERVAL_MS) {
                 float currentElapsedTime = (startTime > 0 && currentTime > startTime) ? (currentTime - startTime) / 1000.0f : 0.0f;
                 float lastSplit = (shotCount > 0) ? splitTimes[shotCount - 1] : 0.0f;
-                displayTimingScreen(currentElapsedTime, shotCount, lastSplit);
+                displayTimingScreen(currentElapsedTime, shotCount, lastSplit, lastShotTime);
                 lastDisplayUpdateTime = currentTime;
                 redrawMenu = false; 
             }
@@ -104,13 +114,14 @@ void handleLiveFireTiming() {
 
     if (redrawMenu || currentTime - lastDisplayUpdateTime >= DISPLAY_UPDATE_INTERVAL_MS) {
         float lastSplit = (shotCount > 0) ? splitTimes[shotCount - 1] : 0.0f;
-        displayTimingScreen(currentElapsedTime, shotCount, lastSplit);
+        displayTimingScreen(currentElapsedTime, shotCount, lastSplit, lastShotTime);
         lastDisplayUpdateTime = currentTime;
         redrawMenu = false; 
     }
 
     // Shot Detection Logic 
     if (currentCyclePeakRMS > shotThresholdRms && 
+        currentTime - startTime > MIN_FIRST_SHOT_TIME_MS && 
         currentTime - lastDetectionTime > SHOT_REFRACTORY_MS && 
         shotCount < currentMaxShots && 
         startTime > 0) 
@@ -128,9 +139,10 @@ void handleLiveFireTiming() {
         }
         lastShotTimestamp = shotTimeMillis; 
         splitTimes[shotCount] = currentSplit;
+        lastShotTime = currentElapsedTime;
         shotCount++;
         
-        displayTimingScreen(currentElapsedTime, shotCount, currentSplit); 
+        displayTimingScreen(currentElapsedTime, shotCount, currentSplit, lastShotTime);
         lastDisplayUpdateTime = currentTime; 
 
         if (shotCount >= currentMaxShots) {
@@ -280,7 +292,7 @@ void handleDryFireRunning() {
 void handleNoisyRangeReadyInput() {
     resetActivityTimer();
     if (redrawMenu) {
-        displayTimingScreen(0.0f, 0, 0.0f);
+        displayTimingScreen(0.0f, 0, 0.0f, 0.0f);
         redrawMenu = false;
     }
     if (StickCP2.BtnA.pressedFor(LONG_PRESS_DURATION_MS)) {
@@ -301,7 +313,7 @@ void handleNoisyRangeReadyInput() {
         StickCP2.Lcd.setTextFont(0);
         StickCP2.Lcd.setTextSize(3);
         StickCP2.Lcd.drawString("Ready...", StickCP2.Lcd.width()/2, StickCP2.Lcd.height()/2);
-        delay(1000);
+        delay(LIVE_FIRE_DELAY_MS);
     }
 }
 
@@ -346,7 +358,7 @@ void handleNoisyRangeTiming() {
              if (redrawMenu || currentTime - lastDisplayUpdateTime >= DISPLAY_UPDATE_INTERVAL_MS) {
                 float currentElapsedTime = (startTime > 0 && currentTime > startTime) ? (currentTime - startTime) / 1000.0f : 0.0f;
                 float lastSplit = (shotCount > 0) ? splitTimes[shotCount - 1] : 0.0f;
-                displayTimingScreen(currentElapsedTime, shotCount, lastSplit);
+                displayTimingScreen(currentElapsedTime, shotCount, lastSplit, lastShotTime);
                 lastDisplayUpdateTime = currentTime;
                 redrawMenu = false; 
             }
@@ -358,7 +370,7 @@ void handleNoisyRangeTiming() {
     float currentElapsedTime = (startTime > 0 && currentTime > startTime) ? (currentTime - startTime) / 1000.0f : 0.0f;
     if (redrawMenu || currentTime - lastDisplayUpdateTime >= DISPLAY_UPDATE_INTERVAL_MS) {
         float lastSplit = (shotCount > 0) ? splitTimes[shotCount - 1] : 0.0f;
-        displayTimingScreen(currentElapsedTime, shotCount, lastSplit);
+        displayTimingScreen(currentElapsedTime, shotCount, lastSplit, lastShotTime);
         lastDisplayUpdateTime = currentTime;
         redrawMenu = false;
     }
@@ -394,8 +406,9 @@ void handleNoisyRangeTiming() {
             }
             lastShotTimestamp = shotTimeMillis;
             splitTimes[shotCount] = currentSplit;
+            lastShotTime = currentElapsedTime;
             shotCount++;
-            displayTimingScreen(currentElapsedTime, shotCount, currentSplit); 
+            displayTimingScreen(currentElapsedTime, shotCount, currentSplit, lastShotTime); 
             lastDisplayUpdateTime = currentTime;
 
             checkingForRecoil = false; 
